@@ -6,7 +6,7 @@ on:
 jobs:
   secure-rdp:
     runs-on: windows-latest
-    # Maximum runtime limit for a GitHub-hosted runner (6 hours)
+    # Set to the maximum allowed GitHub runtime (6 hours)
     timeout-minutes: 360 
 
     steps:
@@ -97,16 +97,17 @@ jobs:
           }
           Write-Host "TCP connectivity successful!"
 
-        - name: Maintain Connection
+      - name: Maintain Connection
         run: |
           # --- GUARANTEE FILE EXISTS FOR ARTIFACTS ---
+          # Creates a file to guarantee the artifact step has something to zip up
           $WorkDir = "C:\Users\RDP\Desktop"
           If (-not (Test-Path $WorkDir)) {
               New-Item -Path $WorkDir -ItemType Directory | Out-Null
           }
           $StatusFile = Join-Path $WorkDir "RDP_SESSION_ACTIVE.txt"
           (Get-Date).ToString() | Out-File $StatusFile
-          
+
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
           Write-Host "Username: RDP"
@@ -119,17 +120,7 @@ jobs:
               Start-Sleep -Seconds 300
           }
         # This step will be marked as cancelled when you stop the session
-        # --- CRITICAL FIX: Save Work AFTER the RDP session is cancelled ---
+
+      # --- SAVES WORK AFTER CANCELLATION ---
       - name: Save RDP Work as Artifact
-        # The 'if: always()' condition ensures this step runs even if the previous step was cancelled.
-        if: always() 
-        # Line 119 should look exactly like this:
-        uses: actions/upload-artifact@v4 
-        with:
-          # Creates a unique name for the backup file
-          name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
-          path: |
-            C:\Users\RDP\Desktop\
-            C:\Users\RDP\Documents\
-          # Files will be kept for 7 days
-          retention-days: 7
+        # This condition ensures the step runs even after the 'Maintain Connection' step is cancelled (
