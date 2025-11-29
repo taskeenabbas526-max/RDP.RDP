@@ -97,7 +97,7 @@ jobs:
           }
           Write-Host "TCP connectivity successful!"
 
-- name: Maintain Connection
+        - name: Maintain Connection
         run: |
           # --- GUARANTEE FILE EXISTS FOR ARTIFACTS ---
           $WorkDir = "C:\Users\RDP\Desktop"
