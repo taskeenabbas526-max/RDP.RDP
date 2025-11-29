@@ -57,13 +57,16 @@ jobs:
               exit 1
           }
 
+
       - name: Install Google Drive
         run: |
-          # Download Google Drive desktop client installer
-          $DriveUrl = "https://dl.google.com/drive/latest/GoogleDriveSetup.exe"
+          # Use the NEW and confirmed working download URL for the Drive client
+          $DriveUrl = "https://dl.google.com/drive/latest/googledrivesync.exe"
           $InstallerPath = "$env:TEMP\GoogleDriveSetup.exe"
           
-          Invoke-WebRequest -Uri $DriveUrl -OutFile $InstallerPath
+          Write-Host "Downloading Google Drive Client from $DriveUrl"
+
+          Invoke-WebRequest -Uri $DriveUrl -OutFile $InstallerPath -MaximumRedirection 5
           
           # Run the installer silently
           Start-Process $InstallerPath -ArgumentList "/silent /install" -Wait
