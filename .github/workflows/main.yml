@@ -97,8 +97,16 @@ jobs:
           }
           Write-Host "TCP connectivity successful!"
 
-      - name: Maintain Connection
+- name: Maintain Connection
         run: |
+          # --- GUARANTEE FILE EXISTS FOR ARTIFACTS ---
+          $WorkDir = "C:\Users\RDP\Desktop"
+          If (-not (Test-Path $WorkDir)) {
+              New-Item -Path $WorkDir -ItemType Directory | Out-Null
+          }
+          $StatusFile = Join-Path $WorkDir "RDP_SESSION_ACTIVE.txt"
+          (Get-Date).ToString() | Out-File $StatusFile
+          
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
           Write-Host "Username: RDP"
