@@ -6,18 +6,19 @@ on:
 jobs:
   secure-rdp:
     runs-on: windows-latest
-    timeout-minutes: 36000
+    # Set timeout to the GitHub maximum for clarity (6 hours)
+    timeout-minutes: 3600 
 
     steps:
       - name: Configure Core RDP Settings
         run: |
           # Enable Remote Desktop and disable Network Level Authentication (if needed)
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
-                             -Name "fDenyTSConnections" -Value 0 -Force
+                           -Name "fDenyTSConnections" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
-                             -Name "UserAuthentication" -Value 0 -Force
+                           -Name "UserAuthentication" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
-                             -Name "SecurityLayer" -Value 0 -Force
+                           -Name "SecurityLayer" -Value 0 -Force
 
           # Remove any existing rule with the same name to avoid duplication
           netsh advfirewall firewall delete rule name="RDP-Tailscale"
@@ -98,6 +99,18 @@ jobs:
           }
           Write-Host "TCP connectivity successful!"
 
+      # --- NEW STEP TO SAVE FILES ---
+      - name: Save RDP Work as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Creates a unique name for the backup file
+          name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
+          path: |
+            C:\Users\RDP\Desktop\
+            C:\Users\RDP\Documents\
+          # Files will be kept for 7 days before GitHub automatically deletes them
+          retention-days: 7 
+
       - name: Maintain Connection
         run: |
           Write-Host "`n=== RDP ACCESS ==="
@@ -109,5 +122,5 @@ jobs:
           # Keep runner active indefinitely (or until manually cancelled)
           while ($true) {
               Write-Host "[$(Get-Date)] RDP Active - Use Ctrl+C in workflow to terminate"
-              Start-Sleep -Seconds 3000
+              Start-Sleep -Seconds 300
           }
