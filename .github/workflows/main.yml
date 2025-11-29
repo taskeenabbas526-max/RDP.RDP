@@ -117,9 +117,16 @@ jobs:
           Write-Host "Username: RDP"
           Write-Host "Password: $(echo $env:RDP_CREDS)"
           Write-Host "==================`n"
-          
-          # Keep runner active indefinitely (or until manually cancelled)
-          while ($true) {
-              Write-Host "[$(Get-Date)] RDP Active - Use Ctrl+C in workflow to terminate"
-              Start-Sleep -Seconds 300
-          }
+
+      - name: Save RDP Work as Artifact
+        if: always() 
+        uses: actions/upload-artifact@v4
+        with:
+          # Creates a unique name for the backup file
+          name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
+          path: |
+            C:\Users\RDP\Desktop\
+            C:\Users\RDP\Documents\
+            C:\Users\RDP\Google Drive\  # <--- This is the new line
+          # Files will be kept for 7 days
+          retention-days: 7
