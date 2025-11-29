@@ -111,9 +111,17 @@ jobs:
               Start-Sleep -Seconds 300
           }
         # This step will be marked as cancelled when you stop the session
-
-      # --- CRITICAL FIX: Save Work AFTER the RDP session is cancelled ---
+        # --- CRITICAL FIX: Save Work AFTER the RDP session is cancelled ---
       - name: Save RDP Work as Artifact
-        # This condition ensures the step runs even after the 'Maintain Connection' step is cancelled.
+        # The 'if: always()' condition ensures this step runs even if the previous step was cancelled.
         if: always() 
-        uses: actions/upload-artifact@
+        # Line 119 should look exactly like this:
+        uses: actions/upload-artifact@v4 
+        with:
+          # Creates a unique name for the backup file
+          name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
+          path: |
+            C:\Users\RDP\Desktop\
+            C:\Users\RDP\Documents\
+          # Files will be kept for 7 days
+          retention-days: 7
