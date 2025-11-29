@@ -57,10 +57,22 @@ jobs:
               exit 1
           }
 
+      - name: Install Google Drive
+        run: |
+          # Download Google Drive desktop client installer
+          $DriveUrl = "https://dl.google.com/drive/latest/GoogleDriveSetup.exe"
+          $InstallerPath = "$env:TEMP\GoogleDriveSetup.exe"
+          
+          Invoke-WebRequest -Uri $DriveUrl -OutFile $InstallerPath
+          
+          # Run the installer silently
+          Start-Process $InstallerPath -ArgumentList "/silent /install" -Wait
+          Write-Host "Google Drive Client Installed."
+          
       - name: Install Tailscale
         run: |
           $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          $installerPath = "$env:TEMP\tailscale.msi"
+          # ... (rest of your Tailscale install code)
           
           Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
           Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
