@@ -119,10 +119,6 @@ jobs:
           # Creates a unique name for the backup file
           name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
           path: |
-            C:\Users\RDP\Desktop\
-            C:\Users\RDP\Documents\
-            !C:\Users\RDP\Documents\My Music\
-            !C:\Users\RDP\Documents\My Videos\
-            !C:\Users\RDP\Documents\My Pictures\
+            C:\Users\RDP\Downloads\
           # Files will be kept for 7 days
           retention-days: 7
