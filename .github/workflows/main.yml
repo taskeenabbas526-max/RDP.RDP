@@ -58,22 +58,6 @@ jobs:
           }
 
 
-      - name: Install Google Drive
-        run: |
-          # Use the stable, public download URL for the Drive client installer
-          # We include -MaximumRedirection to handle Google's multiple redirects reliably.
-          $DriveUrl = "https://www.google.com/drive/download/"
-          $InstallerPath = "$env:TEMP\GoogleDriveSetup.exe"
-          
-          Write-Host "Downloading Google Drive Client from $DriveUrl"
-
-          # Invoke-WebRequest will download the final executable file after following redirects.
-          Invoke-WebRequest -Uri $DriveUrl -OutFile $InstallerPath -MaximumRedirection 5
-          
-          # Run the installer silently
-          Start-Process $InstallerPath -ArgumentList "/silent /install" -Wait
-          Write-Host "Google Drive Client Installed."
-          
       - name: Install Tailscale
         run: |
           $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
