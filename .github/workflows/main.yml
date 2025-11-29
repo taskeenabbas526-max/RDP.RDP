@@ -121,6 +121,8 @@ jobs:
           path: |
             C:\Users\RDP\Desktop\
             C:\Users\RDP\Documents\
-            C:\Users\RDP\Google Drive\  # <--- This is the new line
+            !C:\Users\RDP\Documents\My Music\
+            !C:\Users\RDP\Documents\My Videos\
+            !C:\Users\RDP\Documents\My Pictures\
           # Files will be kept for 7 days
           retention-days: 7
