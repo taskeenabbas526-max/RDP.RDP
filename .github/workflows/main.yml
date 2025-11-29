@@ -6,13 +6,13 @@ on:
 jobs:
   secure-rdp:
     runs-on: windows-latest
-    # Set timeout to the GitHub maximum for clarity (6 hours)
-    timeout-minutes: 3600 
+    # Maximum runtime limit for a GitHub-hosted runner (6 hours)
+    timeout-minutes: 360 
 
     steps:
       - name: Configure Core RDP Settings
         run: |
-          # Enable Remote Desktop and disable Network Level Authentication (if needed)
+          # Enable Remote Desktop and disable Network Level Authentication
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
                            -Name "fDenyTSConnections" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
@@ -20,25 +20,23 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
                            -Name "SecurityLayer" -Value 0 -Force
 
-          # Remove any existing rule with the same name to avoid duplication
+          # Remove existing firewall rule and add new one to allow RDP traffic
           netsh advfirewall firewall delete rule name="RDP-Tailscale"
-          
-          # For testing, allow any incoming connection on port 3389
           netsh advfirewall firewall add rule name="RDP-Tailscale" `
             dir=in action=allow protocol=TCP localport=3389
 
-          # (Optional) Restart the Remote Desktop service to ensure changes take effect
+          # Restart the Remote Desktop service
           Restart-Service -Name TermService -Force
 
       - name: Create RDP User with Secure Password
         run: |
           Add-Type -AssemblyName System.Security
           $charSet = @{
-              Upper   = [char[]](65..90)      # A-Z
-              Lower   = [char[]](97..122)     # a-z
-              Number  = [char[]](48..57)      # 0-9
+              Upper   = [char[]](65..90)
+              Lower   = [char[]](97..122)
+              Number  = [char[]](48..57)
               Special = ([char[]](33..47) + [char[]](58..64) +
-                         [char[]](91..96) + [char[]](123..126)) # Special characters
+                         [char[]](91..96) + [char[]](123..126))
           }
           $rawPassword = @()
           $rawPassword += $charSet.Upper | Get-Random -Count 4
@@ -47,6 +45,7 @@ jobs:
           $rawPassword += $charSet.Special | Get-Random -Count 4
           $password = -join ($rawPassword | Sort-Object { Get-Random })
           $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          
           New-LocalUser -Name "RDP" -Password $securePass -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member "RDP"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
@@ -91,7 +90,6 @@ jobs:
         run: |
           Write-Host "Tailscale IP: $env:TAILSCALE_IP"
           
-          # Test connectivity using Test-NetConnection against the Tailscale IP on port 3389
           $testResult = Test-NetConnection -ComputerName $env:TAILSCALE_IP -Port 3389
           if (-not $testResult.TcpTestSucceeded) {
               Write-Error "TCP connection to RDP port 3389 failed"
@@ -99,19 +97,7 @@ jobs:
           }
           Write-Host "TCP connectivity successful!"
 
-      # --- NEW STEP TO SAVE FILES ---
-      - name: Save RDP Work as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          # Creates a unique name for the backup file
-          name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
-          path: |
-            C:\Users\RDP\Desktop\
-            C:\Users\RDP\Documents\
-          # Files will be kept for 7 days before GitHub automatically deletes them
-          retention-days: 7 
-
-- name: Maintain Connection
+      - name: Maintain Connection
         run: |
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
@@ -120,24 +106,14 @@ jobs:
           Write-Host "==================`n"
           
           # Keep runner active indefinitely (or until manually cancelled)
-          # The job will wait here for up to 360 minutes (6 hours)
           while ($true) {
               Write-Host "[$(Get-Date)] RDP Active - Use Ctrl+C in workflow to terminate"
               Start-Sleep -Seconds 300
           }
-        # We purposely do NOT put 'if: always()' here.
-        # This step should appear as cancelled when you stop the RDP session.
+        # This step will be marked as cancelled when you stop the session
 
       # --- CRITICAL FIX: Save Work AFTER the RDP session is cancelled ---
       - name: Save RDP Work as Artifact
-        # The 'if: always()' condition ensures this step runs even if the previous step was cancelled (which is how you end the RDP session).
+        # This condition ensures the step runs even after the 'Maintain Connection' step is cancelled.
         if: always() 
-        uses: actions/upload-artifact@v4
-        with:
-          # Creates a unique name for the backup file
-          name: RDP-Work-Backup-${{ env.TAILSCALE_IP }}
-          path: |
-            C:\Users\RDP\Desktop\
-            C:\Users\RDP\Documents\
-          # Files will be kept for 7 days
-          retention-days: 7
+        uses: actions/upload-artifact@
